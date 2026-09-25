@@ -1,4 +1,4 @@
-# immich
+# immich-docker
 
 [Immich](https://immich.app) photo & video library for Helsinki, served at **https://images.jwowk.net**.
 
