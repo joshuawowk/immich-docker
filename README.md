@@ -53,4 +53,4 @@ Android app: [Google Play](https://play.google.com/store/apps/details?id=app.ale
 2. Diff this compose file against the new release's `docker-compose.yml` (postgres/valkey digests change occasionally).
 3. Bump the tag in both the `immich-server` and `immich-machine-learning` image lines (they must match) and push. Portainer redeploys within 5 minutes.
 
-Diun (already running on Helsinki) sends a Pushover alert when a new `vX.Y.Z` tag of immich-server is published.
+Diun (already running on Helsinki) is configured, via labels on immich-server, to send a Pushover alert when a new `vX.Y.Z` tag is published. Its first check of Immich is its next daily run.
