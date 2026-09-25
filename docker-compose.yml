@@ -1,0 +1,82 @@
+# Immich - self-hosted photo & video library, served at https://images.jwowk.net
+#
+# Deployed on Helsinki as a Portainer GitOps stack (polls this repo every 5m).
+# Adapted from the official v3.2.2 compose file:
+#   https://github.com/immich-app/immich/releases/download/v3.2.2/docker-compose.yml
+#
+# Changes from upstream:
+#   - env comes from the Portainer stack environment instead of a committed .env
+#   - no published ports; Nginx Proxy Manager reaches immich_server:2283 over npm_net
+#   - DB/Redis hostnames point at container names so they can't collide with other
+#     services on the shared npm_net network
+#   - data lives under /docker/immich
+#
+# Portainer stack env vars:
+#   DB_PASSWORD (required) - letters and digits only
+#
+# Upgrading: read the release notes for breaking changes, bump IMMICH_VERSION's
+# default in both image lines below, and push. Portainer redeploys automatically.
+
+x-immich-env: &immich-env
+  TZ: ${TZ:-Etc/UTC}
+  DB_HOSTNAME: immich_postgres
+  DB_USERNAME: ${DB_USERNAME:-postgres}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in the Portainer stack environment}
+  DB_DATABASE_NAME: ${DB_DATABASE_NAME:-immich}
+  REDIS_HOSTNAME: immich_redis
+
+services:
+  immich-server:
+    container_name: immich_server
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v3.2.2}
+    volumes:
+      - ${UPLOAD_LOCATION:-/docker/immich/library}:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment: *immich-env
+    depends_on:
+      - redis
+      - database
+    networks:
+      - default
+      - npm_net
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3.2.2}
+    volumes:
+      - ${MODEL_CACHE_LOCATION:-/docker/immich/model-cache}:/cache
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+  redis:
+    container_name: immich_redis
+    image: docker.io/valkey/valkey:9@sha256:70739f85ad2ee01a726a965584a0f94895f01b0c60b3cc8b0aeef11eaa6888cf
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
+    restart: unless-stopped
+
+  database:
+    container_name: immich_postgres
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in the Portainer stack environment}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_DB: ${DB_DATABASE_NAME:-immich}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      # Must stay on local disk - Immich does not support the database on a network share
+      - ${DB_DATA_LOCATION:-/docker/immich/postgres}:/var/lib/postgresql/data
+    shm_size: 128mb
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+networks:
+  npm_net:
+    external: true
