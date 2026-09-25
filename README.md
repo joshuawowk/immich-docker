@@ -14,7 +14,7 @@ Deployed as a Portainer GitOps stack from `docker-compose.yml` on `master`, with
 | GitOps updates | Polling, 5m |
 | Env: `DB_PASSWORD` | random, `A-Za-z0-9` only |
 
-Optional env overrides (defaults are in the compose file): `TZ`, `UPLOAD_LOCATION`, `DB_DATA_LOCATION`, `MODEL_CACHE_LOCATION`, `IMMICH_VERSION`.
+Optional env overrides (defaults are in the compose file): `TZ`, `UPLOAD_LOCATION`, `DB_DATA_LOCATION`, `MODEL_CACHE_LOCATION`. The Immich version is deliberately not an env var: it lives only in git so Portainer always runs what the repo says.
 
 ## Data on Helsinki
 
@@ -45,4 +45,6 @@ Android app: [Google Play](https://play.google.com/store/apps/details?id=app.ale
 
 1. Read the [release notes](https://github.com/immich-app/immich/releases) for breaking changes.
 2. Diff this compose file against the new release's `docker-compose.yml` (postgres/valkey digests change occasionally).
-3. Bump `IMMICH_VERSION` in both image lines and push. Portainer redeploys within 5 minutes.
+3. Bump the tag in both the `immich-server` and `immich-machine-learning` image lines (they must match) and push. Portainer redeploys within 5 minutes.
+
+Diun (already running on Helsinki) sends a Pushover alert when a new `vX.Y.Z` tag of immich-server is published.
