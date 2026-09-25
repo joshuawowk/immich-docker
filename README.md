@@ -30,12 +30,18 @@ Proxy host `images.jwowk.net` -> `http://immich_server:2283`, websockets on, For
 
 ```nginx
 client_max_body_size 50000M;
+client_body_buffer_size 1024k;
+proxy_request_buffering off;
 proxy_read_timeout 600s;
 proxy_send_timeout 600s;
 send_timeout 600s;
 ```
 
-Without the larger body size and timeouts, big video uploads from the mobile app fail.
+Without the larger body size and timeouts, big video uploads from the mobile app fail. With request buffering off, uploads stream straight to Immich instead of being staged on NPM's disk first.
+
+## Sharing
+
+Shared links serve the full-resolution preview by default. The untouched original, which carries its EXIF data including GPS location, is only downloadable through a link that has **Show metadata** enabled.
 
 ## Mobile
 
